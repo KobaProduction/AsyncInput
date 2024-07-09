@@ -1,18 +1,14 @@
 #ifndef ASYNCINPUT_BUTTON_H
 #define ASYNCINPUT_BUTTON_H
 
-#include "types.h"
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
+#include <driver/gpio.h>
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "driver/gpio.h"
-
-
+#include "types.h"
 
 class Button {
 public:
@@ -26,7 +22,7 @@ protected:
     AsyncInput::button_config_t cfg;
     uint32_t _last_change_time_us;
     uint32_t _last_click_time_us;
-    bool _pin_level = true;
+    bool _pin_level;
     QueueHandle_t evt_queue = nullptr;
     void *_handler_context = nullptr;
     AsyncInput::button_handler_t _handler = nullptr;
