@@ -1,6 +1,8 @@
 #ifndef ASYNCINPUT_ASYNCINPUT_H
 #define ASYNCINPUT_ASYNCINPUT_H
 
-
+#ifndef ASYNCINPUT_BUTTON_H
+#include "button.h"
+#endif
 
 #endif //ASYNCINPUT_ASYNCINPUT_H

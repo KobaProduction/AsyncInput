@@ -12,7 +12,7 @@ project(ASYNC_INPUT
 )
 
 set(ASYNC_INPUT_SRCS
-        src/encoders/cobs/decoder.cpp
+        src/button.cpp
 )
 
 idf_component_register(
