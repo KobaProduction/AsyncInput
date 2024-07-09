@@ -12,6 +12,7 @@ project(ASYNC_INPUT
 )
 
 set(ASYNC_INPUT_SRCS
+        src/utils.cpp
         src/button.cpp
 )
 

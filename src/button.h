@@ -9,6 +9,8 @@
 #include <driver/gpio.h>
 
 #include "types.h"
+#include "utils.h"
+
 
 class Button {
 public:
@@ -18,15 +20,15 @@ public:
     void tick();
     bool is_pressed();
 protected:
-    void IRAM_ATTR _interrupt();
-    AsyncInput::button_config_t cfg;
+    AsyncInput::button_config_t _cfg;
     uint32_t _last_change_time_us;
     uint32_t _last_click_time_us;
+    bool _enabled = false;
     bool _pin_level;
-    QueueHandle_t evt_queue = nullptr;
+    QueueHandle_t _evt_queue = nullptr;
     void *_handler_context = nullptr;
     AsyncInput::button_handler_t _handler = nullptr;
-
+    void IRAM_ATTR _interrupt();
 };
 
 #endif //ASYNCINPUT_BUTTON_H
