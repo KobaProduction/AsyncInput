@@ -14,6 +14,7 @@ project(ASYNC_INPUT
 set(ASYNC_INPUT_SRCS
         src/utils.cpp
         src/button.cpp
+        src/encoder.cpp
 )
 
 idf_component_register(
