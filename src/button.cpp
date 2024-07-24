@@ -13,19 +13,19 @@ bool Button::enable(AsyncInput::button_config_t config) {
     _evt_queue = xQueueCreate(_cfg.max_events, sizeof(AsyncInput::button_event_t));
     if (not _evt_queue) return false;
 
-    if (not _cfg.double_click_timeout_ms) _cfg.double_click_timeout_ms = ASYNC_INPUT_DOUBLE_CLICK_TIMEOUT_MS;
-    _cfg.double_click_timeout_ms *= 1000; // convert to us
+    if (not _cfg.double_click_timeout_us) _cfg.double_click_timeout_us = ASYNC_INPUT_DOUBLE_CLICK_TIMEOUT_US;
+    if (not _cfg.contact_bounce_timeout_us) _cfg.contact_bounce_timeout_us = ASYNC_INPUT_CONTACT_BOUNCE_TIMEOUT_US;
     _last_change_time_us = 0;
     _last_click_time_us = 0;
     _pin_level = false;
 
-    if (not prepare_pin(_cfg.pin_cfg)) return false;
+    if (not prepare_button_pin(_cfg.pin_cfg)) return false;
 
-    esp_err_t status = gpio_isr_handler_add(_cfg.pin_cfg.pin, [] (void *interrupt_context) IRAM_ATTR  {
-        Button &self = *reinterpret_cast<Button*>(interrupt_context);
-        self._interrupt();
-    }, this);
-    if (status not_eq ESP_OK) return false;
+    static IRAM_ATTR auto isr_button_handler =  [] (void *interrupt_context)  {
+        reinterpret_cast<Button*>(interrupt_context)->_interrupt();
+    };
+
+    if (gpio_isr_handler_add(_cfg.pin_cfg.pin, isr_button_handler, this) not_eq ESP_OK) return false;
     _enabled = true;
     return true;
 }
@@ -52,9 +52,9 @@ bool Button::is_pressed() {
 void Button::_interrupt() {
     bool last_level = _pin_level;
     _pin_level = gpio_get_level(_cfg.pin_cfg.pin);
-    if (_cfg.pin_cfg.inverse_mode) _pin_level = not _pin_level;
+//    if (_cfg.pin_cfg.inverse_mode) _pin_level = not _pin_level;
 
-    bool is_contact_bounce = esp_timer_get_time() - _last_change_time_us < _cfg.pin_cfg.contact_bounce_timeout_us;
+    bool is_contact_bounce = esp_timer_get_time() - _last_change_time_us < _cfg.contact_bounce_timeout_us;
     if (is_contact_bounce or last_level == _pin_level) return;
     _last_change_time_us = esp_timer_get_time();
 
@@ -67,7 +67,7 @@ void Button::_interrupt() {
     event = AsyncInput::PRESS;
     xQueueSendFromISR(_evt_queue, &event, nullptr);
 
-    bool is_double_click = _last_change_time_us - _last_click_time_us < _cfg.double_click_timeout_ms;
+    bool is_double_click = _last_change_time_us - _last_click_time_us < _cfg.double_click_timeout_us;
     event = is_double_click ? AsyncInput::DOUBLE_CLICK : AsyncInput::CLICK;
     xQueueSendFromISR(_evt_queue, &event, nullptr);
     _last_click_time_us = _last_change_time_us;

@@ -5,6 +5,6 @@
 
 #include "types.h"
 
-bool prepare_pin(AsyncInput::pin_config_t &pin_cfg);
+bool prepare_button_pin(AsyncInput::pin_config_t &pin_cfg);
 
 #endif //ASYNCINPUT_UTILS_H
