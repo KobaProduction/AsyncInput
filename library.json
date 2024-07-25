@@ -1,0 +1,31 @@
+{
+  "name": "AsyncInput",
+  "description": "The library implements interrupt-based analysis for encoders and buttons. Asynchronous application architecture. No dependencies.",
+  "keywords": "encoder, button, interrupt, async",
+  "authors": [
+    {
+      "name": "Arthur Koba",
+      "url": "https://github.com/ArthurKoba",
+      "maintainer": true
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KobaProduction/AsyncInput.git"
+  },
+  "version": "0.1.0",
+  "license": "MIT",
+  "homepage": "https://github.com/KobaProduction/AsyncInput",
+  "frameworks": ["arduino", "espidf"],
+  "platforms": "espressif32",
+  "headers": "AsyncInput.h",
+  "export": {
+    "exclude": ["docs"]
+  },
+  "build": {
+    "srcFilter": [
+      "+<*.cpp>",
+      "+<**/**/*.cpp>"
+    ]
+  }
+}
