@@ -1,10 +1,10 @@
 #include "encoder.h"
 
-Encoder *Encoder::encoders[PCNT_UNIT_MAX] = {nullptr};
-bool Encoder::_attachedInterrupt = false;
+EncoderCore *EncoderCore::encoders[PCNT_UNIT_MAX] = {nullptr};
+bool EncoderCore::_attachedInterrupt = false;
 static portMUX_TYPE spinlock = portMUX_INITIALIZER_UNLOCKED;
 
-bool Encoder::enable(AsyncInput::encoder_config_t config) {
+bool EncoderCore::enable(const AsyncInput::encoder_config_t &config) {
     if (_enabled or config.data_pin_cfg.pin == GPIO_NUM_NC or config.clock_pin_cfg.pin == GPIO_NUM_NC) return false;
 
     if (not _cfg.max_events) _cfg.max_events = ASYNC_INPUT_MAX_EVENTS;
@@ -12,7 +12,7 @@ bool Encoder::enable(AsyncInput::encoder_config_t config) {
     if (not _events_queue) return false;
 
     for (int i = 0; i < PCNT_UNIT_MAX; i++) {
-        if (not Encoder::encoders[i]) {
+        if (not encoders[i]) {
             encoders[i] = this;
             _pcnt_config.unit = static_cast<pcnt_unit_t>(i);
             break;
@@ -32,7 +32,7 @@ bool Encoder::enable(AsyncInput::encoder_config_t config) {
     _pcnt_config.channel = PCNT_CHANNEL_0;
     _pcnt_config.pos_mode = PCNT_COUNT_DIS;
     _pcnt_config.neg_mode = PCNT_COUNT_INC;
-    _pcnt_config.lctrl_mode = PCNT_MODE_KEEP;    // Rising A on HIGH B = CW Step
+    _pcnt_config.lctrl_mode = PCNT_MODE_KEEP; // Rising A on HIGH B = CW Step
     _pcnt_config.hctrl_mode = PCNT_MODE_REVERSE; // Rising A on LOW B = CCW Step
     _pcnt_config.counter_h_lim = _cfg.max_counter_value;
     _pcnt_config.counter_l_lim = _cfg.min_counter_value;
@@ -48,8 +48,8 @@ bool Encoder::enable(AsyncInput::encoder_config_t config) {
         _attachedInterrupt = true;
     }
 
-    static IRAM_ATTR auto isr_pcnt_handler =  [] (void *interrupt_context)  {
-        reinterpret_cast<Encoder*>(interrupt_context)->_interrupt();
+    static IRAM_ATTR auto isr_pcnt_handler = [](void *interrupt_context) {
+        static_cast<EncoderCore *>(interrupt_context)->_interrupt();
     };
 
     if (pcnt_isr_handler_add(_pcnt_config.unit, isr_pcnt_handler, this) not_eq ESP_OK) {
@@ -68,12 +68,12 @@ bool Encoder::enable(AsyncInput::encoder_config_t config) {
     return true;
 }
 
-void Encoder::disable() {
+void EncoderCore::disable() {
     _enabled = false;
     pcnt_intr_disable(_pcnt_config.unit);
     bool need_disable_isr = true;
-    Encoder::encoders[_pcnt_config.unit] = nullptr;
-    for (auto &encoder : Encoder::encoders) {
+    encoders[_pcnt_config.unit] = nullptr;
+    for (auto &encoder: EncoderCore::encoders) {
         if (not encoder) continue;
         need_disable_isr = false;
         break;
@@ -89,7 +89,7 @@ void Encoder::disable() {
     vQueueDelete(_events_queue);
 }
 
-void Encoder::_interrupt() {
+void EncoderCore::_interrupt() {
     AsyncInput::encoder_event_t event;
     static int16_t counter;
     portENTER_CRITICAL_SAFE(&spinlock);
@@ -97,15 +97,16 @@ void Encoder::_interrupt() {
     pcnt_counter_clear(_pcnt_config.unit);
     portEXIT_CRITICAL_SAFE(&spinlock);
     if (not counter) return;
-    bool is_fast_rotation = ((esp_timer_get_time() - _last_rotation_time_us) / abs(counter)) < _cfg.fast_rotate_timeout_us;
+    const bool is_fast_rotation = ((esp_timer_get_time() - _last_rotation_time_us) / abs(counter)) < _cfg.
+                            fast_rotate_timeout_us;
     _last_rotation_time_us = esp_timer_get_time();
-    _counter += is_fast_rotation ? counter * 10: counter;
+    _counter += is_fast_rotation ? counter * 10 : counter;
     if (counter > 0) event = is_fast_rotation ? AsyncInput::FAST_LEFT : AsyncInput::LEFT;
     else event = is_fast_rotation ? AsyncInput::FAST_RIGHT : AsyncInput::RIGHT;
     xQueueSendFromISR(_events_queue, &event, nullptr);
 }
 
-void Encoder::tick() {
+void EncoderCore::tick() const {
     if (not _enabled) return;
     AsyncInput::encoder_event_t event;
     if (xQueueReceive(_events_queue, &event, 0)) {
@@ -113,15 +114,15 @@ void Encoder::tick() {
     }
 }
 
-int32_t Encoder::get_counter() const {
+int32_t EncoderCore::get_counter() const {
     return _counter;
 }
 
-void Encoder::reset_counter() {
+void EncoderCore::reset_counter() {
     _counter = 0;
 }
 
-void Encoder::set_handler(AsyncInput::encoder_handler_t handler, void *handler_context) {
+void EncoderCore::set_handler(const AsyncInput::encoder_handler_t handler, void *handler_context) {
     _handler = handler;
     _handler_context = handler_context;
 }

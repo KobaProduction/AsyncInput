@@ -43,6 +43,7 @@ namespace AsyncInput {
     struct pin_config_t {
         gpio_num_t pin = GPIO_NUM_NC;
         gpio_pull_mode_t pull_mode = GPIO_FLOATING;
+        bool inverse_mode = false;
     };
 
     struct button_config_t {

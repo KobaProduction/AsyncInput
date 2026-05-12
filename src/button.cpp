@@ -1,11 +1,11 @@
 #include "button.h"
 
-void Button::set_handler(AsyncInput::button_handler_t handler, void *handler_context) {
+void ButtonCore::set_handler(const AsyncInput::button_handler_t handler, void *handler_context) {
     _handler = handler;
     _handler_context = handler_context;
 }
 
-bool Button::enable(AsyncInput::button_config_t config) {
+bool ButtonCore::enable(const AsyncInput::button_config_t &config) {
     if (_enabled or config.pin_cfg.pin == GPIO_NUM_NC) return false;
     _cfg = config;
 
@@ -22,7 +22,7 @@ bool Button::enable(AsyncInput::button_config_t config) {
     if (not prepare_button_pin(_cfg.pin_cfg)) return false;
 
     static IRAM_ATTR auto isr_button_handler =  [] (void *interrupt_context)  {
-        reinterpret_cast<Button*>(interrupt_context)->_interrupt();
+        static_cast<ButtonCore*>(interrupt_context)->_interrupt();
     };
 
     if (gpio_isr_handler_add(_cfg.pin_cfg.pin, isr_button_handler, this) not_eq ESP_OK) return false;
@@ -30,14 +30,14 @@ bool Button::enable(AsyncInput::button_config_t config) {
     return true;
 }
 
-void Button::disable() {
+void ButtonCore::disable() {
     _enabled = false;
     gpio_isr_handler_remove(_cfg.pin_cfg.pin);
     gpio_reset_pin(_cfg.pin_cfg.pin);
     vQueueDelete(_evt_queue);
 }
 
-void Button::tick() {
+void ButtonCore::tick() const {
     if (not _enabled) return;
     AsyncInput::button_event_t event;
     if (xQueueReceive(_evt_queue, &event, 0)) {
@@ -45,21 +45,20 @@ void Button::tick() {
     }
 }
 
-bool Button::is_pressed() {
-    return _pin_level;
+bool ButtonCore::is_pressed() const {
+    return _cfg.pin_cfg.inverse_mode ? not _pin_level : _pin_level;
 }
 
-void Button::_interrupt() {
-    bool last_level = _pin_level;
+void ButtonCore::_interrupt() {
+    const bool last_level = _pin_level;
     _pin_level = gpio_get_level(_cfg.pin_cfg.pin);
-//    if (_cfg.pin_cfg.inverse_mode) _pin_level = not _pin_level;
 
-    bool is_contact_bounce = esp_timer_get_time() - _last_change_time_us < _cfg.contact_bounce_timeout_us;
+    const bool is_contact_bounce = esp_timer_get_time() - _last_change_time_us < _cfg.contact_bounce_timeout_us;
     if (is_contact_bounce or last_level == _pin_level) return;
     _last_change_time_us = esp_timer_get_time();
 
     AsyncInput::button_event_t event = AsyncInput::RELEASE;
-    if (not _pin_level) {
+    if (not is_pressed()) {
         xQueueSendFromISR(_evt_queue, &event, nullptr);
         return;
     }
@@ -67,7 +66,7 @@ void Button::_interrupt() {
     event = AsyncInput::PRESS;
     xQueueSendFromISR(_evt_queue, &event, nullptr);
 
-    bool is_double_click = _last_change_time_us - _last_click_time_us < _cfg.double_click_timeout_us;
+    const bool is_double_click = _last_change_time_us - _last_click_time_us < _cfg.double_click_timeout_us;
     event = is_double_click ? AsyncInput::DOUBLE_CLICK : AsyncInput::CLICK;
     xQueueSendFromISR(_evt_queue, &event, nullptr);
     _last_click_time_us = _last_change_time_us;
