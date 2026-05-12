@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.5)
 set(CMAKE_CXX_STANDARD 17)
 
 project(ASYNC_INPUT
-        VERSION 0.1
+        VERSION 0.1.1
         DESCRIPTION "Library for asynchronous control of buttons and incremental encoders for microcontrollers."
         LANGUAGES CXX
 )
