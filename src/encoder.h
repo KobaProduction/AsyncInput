@@ -24,7 +24,7 @@ public:
 
     void reset_counter();
 
-    void set_handler(AsyncInput::encoder_handler_t handler, void *handler_context = nullptr);
+    void set_handler(const AsyncInput::encoder_handler_t &handler);
 
     bool enable(const AsyncInput::encoder_config_t &config);
 
@@ -39,7 +39,6 @@ protected:
     volatile int32_t _counter = 0;
     bool _enabled = false;
     QueueHandle_t _events_queue = nullptr;
-    void *_handler_context = nullptr;
     AsyncInput::encoder_handler_t _handler = nullptr;
 
     void IRAM_ATTR _interrupt();

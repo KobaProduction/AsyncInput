@@ -14,7 +14,7 @@
 
 class ButtonCore {
 public:
-    void set_handler(AsyncInput::button_handler_t handler, void *handler_context = nullptr);
+    void set_handler(const AsyncInput::button_handler_t &handler);
 
     bool enable(const AsyncInput::button_config_t &config);
 
@@ -31,7 +31,6 @@ protected:
     bool _enabled = false;
     bool _pin_level = false;
     QueueHandle_t _evt_queue = nullptr;
-    void *_handler_context = nullptr;
     AsyncInput::button_handler_t _handler = nullptr;
 
     void IRAM_ATTR _interrupt();

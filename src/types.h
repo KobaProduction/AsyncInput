@@ -1,8 +1,9 @@
 #ifndef ASYNCINPUT_TYPES_H
 #define ASYNCINPUT_TYPES_H
 
+#include <cstdint>
+#include <functional>
 #include <hal/gpio_types.h>
-#include <stdint.h>
 
 #if not defined(ASYNC_INPUT_MAX_EVENTS)
 #define ASYNC_INPUT_MAX_EVENTS 30
@@ -63,9 +64,8 @@ namespace AsyncInput {
         uint16_t contact_bounce_timeout_us = ASYNC_INPUT_CONTACT_BOUNCE_TIMEOUT_US;
     };
 
-
-    typedef void (*button_handler_t)(button_event_t event, void *button_handler_context);
-    typedef void (*encoder_handler_t)(encoder_event_t event, void *encoder_handler_context);
+    typedef std::function<void(button_event_t)> button_handler_t;
+    typedef std::function<void(encoder_event_t)> encoder_handler_t;
 }
 
 #endif //ASYNCINPUT_TYPES_H

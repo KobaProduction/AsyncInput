@@ -1,8 +1,7 @@
 #include "button.h"
 
-void ButtonCore::set_handler(const AsyncInput::button_handler_t handler, void *handler_context) {
+void ButtonCore::set_handler(const AsyncInput::button_handler_t &handler) {
     _handler = handler;
-    _handler_context = handler_context;
 }
 
 bool ButtonCore::enable(const AsyncInput::button_config_t &config) {
@@ -21,8 +20,8 @@ bool ButtonCore::enable(const AsyncInput::button_config_t &config) {
 
     if (not prepare_button_pin(_cfg.pin_cfg)) return false;
 
-    static IRAM_ATTR auto isr_button_handler =  [] (void *interrupt_context)  {
-        static_cast<ButtonCore*>(interrupt_context)->_interrupt();
+    static IRAM_ATTR auto isr_button_handler = [](void *interrupt_context) {
+        static_cast<ButtonCore *>(interrupt_context)->_interrupt();
     };
 
     if (gpio_isr_handler_add(_cfg.pin_cfg.pin, isr_button_handler, this) not_eq ESP_OK) return false;
@@ -41,7 +40,7 @@ void ButtonCore::tick() const {
     if (not _enabled) return;
     AsyncInput::button_event_t event;
     if (xQueueReceive(_evt_queue, &event, 0)) {
-        if (_handler) _handler(event, _handler_context);
+        if (_handler) _handler(event);
     }
 }
 

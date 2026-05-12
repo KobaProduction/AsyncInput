@@ -14,8 +14,8 @@ void setup() {
     Serial.println("Start test");
 
     AsyncInput::button_config_t btn_cfg;
-    btn_cfg.pin_cfg.pin = gpio_num_t(ENCODER_BTN_PIN);
-    btn.set_handler([] (AsyncInput::button_event_t event, void *ctx) {
+    btn_cfg.pin_cfg.pin = static_cast<gpio_num_t>(ENCODER_BTN_PIN);
+    btn.set_handler([] (const AsyncInput::button_event_t event) {
         switch (event) {
             case AsyncInput::CLICK:
                 Serial.println("CLICK");
@@ -34,11 +34,10 @@ void setup() {
     btn.enable(btn_cfg);
 
     AsyncInput::encoder_config_t enc_cfg;
-    enc_cfg.clock_pin_cfg.pin = gpio_num_t(ENCODER_CLK_PIN);
-    enc_cfg.data_pin_cfg.pin = gpio_num_t(ENCODER_DT_PIN);
+    enc_cfg.clock_pin_cfg.pin = static_cast<gpio_num_t>(ENCODER_CLK_PIN);
+    enc_cfg.data_pin_cfg.pin = static_cast<gpio_num_t>(ENCODER_DT_PIN);
     enc_cfg.max_events = 255;
-    enc.set_handler([] (AsyncInput::encoder_event_t event, void *ctx) {
-        Encoder &enc = *reinterpret_cast<Encoder*>(ctx);
+    enc.set_handler([] (const AsyncInput::encoder_event_t event) {
         static uint32_t last_time = esp_timer_get_time();
         if (esp_timer_get_time() - last_time > 1000000) {
             Serial.println();
@@ -60,7 +59,7 @@ void setup() {
                 Serial.println("FAST_RIGHT");
                 break;
         }
-    }, &enc);
+    });
 
     if (enc.enable(enc_cfg)) {
         Serial.println("ENC started");

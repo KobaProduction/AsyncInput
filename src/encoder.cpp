@@ -98,7 +98,7 @@ void EncoderCore::_interrupt() {
     portEXIT_CRITICAL_SAFE(&spinlock);
     if (not counter) return;
     const bool is_fast_rotation = ((esp_timer_get_time() - _last_rotation_time_us) / abs(counter)) < _cfg.
-                            fast_rotate_timeout_us;
+                                  fast_rotate_timeout_us;
     _last_rotation_time_us = esp_timer_get_time();
     _counter += is_fast_rotation ? counter * 10 : counter;
     if (counter > 0) event = is_fast_rotation ? AsyncInput::FAST_LEFT : AsyncInput::LEFT;
@@ -110,7 +110,7 @@ void EncoderCore::tick() const {
     if (not _enabled) return;
     AsyncInput::encoder_event_t event;
     if (xQueueReceive(_events_queue, &event, 0)) {
-        if (_handler) _handler(event, _handler_context);
+        if (_handler) _handler(event);
     }
 }
 
@@ -122,7 +122,6 @@ void EncoderCore::reset_counter() {
     _counter = 0;
 }
 
-void EncoderCore::set_handler(const AsyncInput::encoder_handler_t handler, void *handler_context) {
+void EncoderCore::set_handler(const AsyncInput::encoder_handler_t &handler) {
     _handler = handler;
-    _handler_context = handler_context;
 }
